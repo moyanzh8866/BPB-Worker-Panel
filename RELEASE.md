@@ -1,12 +1,10 @@
-# Migrate to sing-box 1.12.0
-- Implemented new sing-box DNS regarding 1.12.0 migrations
-- Fixed DOH with domain addresses issue on sing-box
+# Sing-box Fragment
 
-> [!CAUTION]
-> You have to update your clients to 1.12.x before updating panel to this version.
+Starting from version 1.12.0 sing-box added tls fragment to its core. Panel is now providing fragment sub for sing-box, however, please note that fragment settings in panel are not affecting sing-box config because it only has 1 mod available and is not flexible. It works by the way.
+
+> [!WARNING]
+> Please use [1.12.0-beta.28](https://github.com/SagerNet/sing-box/releases/tag/v1.12.0-beta.28) or higher versions of sing-box.
 
 ## ⚙️ Bug fixes and Improvements
-- Added ProxyIP:Port format. You can enter Proxy IP just like before (default port is 443) or enter ProxyIP:Port if you have a Proxy IP on a different port. 
-- Fixed Clash Trojan bug in 3.2.5
-- Improved performance of all cores on DOH with `https://Domain/dns-query` format.
-- Refactored and some other bug fixes.
+
+- Fixed Russia routing rules bug.

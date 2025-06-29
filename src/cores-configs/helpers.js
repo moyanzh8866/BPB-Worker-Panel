@@ -1,12 +1,12 @@
 export function isDomain(address) {
-    const domainPattern = /^(?!\-)(?:[A-Za-z0-9\-]{1,63}\.)+[A-Za-z]{2,}$/;
+    if (!address) return false;
+    const domainPattern = /^(?!-)(?:[A-Za-z0-9-]{1,63}.)+[A-Za-z]{2,}$/;
     return domainPattern.test(address);
 }
 
 export async function resolveDNS(domain) {
-    const dohURL = 'https://cloudflare-dns.com/dns-query';
-    const dohURLv4 = `${dohURL}?name=${encodeURIComponent(domain)}&type=A`;
-    const dohURLv6 = `${dohURL}?name=${encodeURIComponent(domain)}&type=AAAA`;
+    const dohURLv4 = `${globalThis.dohURL}?name=${encodeURIComponent(domain)}&type=A`;
+    const dohURLv6 = `${globalThis.dohURL}?name=${encodeURIComponent(domain)}&type=AAAA`;
 
     try {
         const [ipv4Response, ipv6Response] = await Promise.all([
@@ -30,18 +30,19 @@ export async function resolveDNS(domain) {
     }
 }
 
-export async function getConfigAddresses(cleanIPs, VLTRenableIPv6, customCdnAddrs, isFragment) {
+export async function getConfigAddresses(isFragment) {
+    const { settings, hostName } = globalThis;
     const resolved = await resolveDNS(hostName);
-    const defaultIPv6 = VLTRenableIPv6 ? resolved.ipv6.map((ip) => `[${ip}]`) : [];
+    const defaultIPv6 = settings.VLTRenableIPv6 ? resolved.ipv6.map((ip) => `[${ip}]`) : [];
     const addrs = [
         hostName,
         'www.speedtest.net',
         ...resolved.ipv4,
         ...defaultIPv6,
-        ...cleanIPs
+        ...settings.cleanIPs
     ];
-    
-    return isFragment ? addrs : [...addrs, ...customCdnAddrs];
+
+    return isFragment ? addrs : [...addrs, ...settings.customCdnAddrs];
 }
 
 export function extractWireguardParams(warpConfigs, isWoW) {
@@ -61,12 +62,12 @@ export function generateRemark(index, port, address, cleanIPs, protocol, configT
 
     cleanIPs.includes(address)
         ? addressType = 'Clean IP'
-        : addressType = isDomain(address) ? 'Domain': isIPv4(address) ? 'IPv4' : isIPv6(address) ? 'IPv6' : '';
+        : addressType = isDomain(address) ? 'Domain' : isIPv4(address) ? 'IPv4' : isIPv6(address) ? 'IPv6' : '';
 
     return `💦 ${index} - ${protocol}${type} - ${addressType} : ${port}`;
 }
 
-export function randomUpperCase (str) {
+export function randomUpperCase(str) {
     let result = '';
     for (let i = 0; i < str.length; i++) {
         result += Math.random() < 0.5 ? str[i].toUpperCase() : str[i];
@@ -74,7 +75,7 @@ export function randomUpperCase (str) {
     return result;
 }
 
-export function getRandomPath (length) {
+export function getRandomPath(length) {
     let result = '';
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const charactersLength = characters.length;
@@ -84,7 +85,7 @@ export function getRandomPath (length) {
     return result;
 }
 
-export function base64ToDecimal (base64) {
+export function base64ToDecimal(base64) {
     const binaryString = atob(base64);
     const hexString = Array.from(binaryString).map(char => char.charCodeAt(0).toString(16).padStart(2, '0')).join('');
     const decimalArray = hexString.match(/.{2}/g).map(hex => parseInt(hex, 16));
@@ -102,10 +103,14 @@ export function isIPv6(address) {
 }
 
 export function getDomain(url) {
-    const newUrl = new URL(url);
-    const host = newUrl.hostname;
-    const isHostDomain = isDomain(host);
-    return {host, isHostDomain};
+    try {
+        const newUrl = new URL(url);
+        const host = newUrl.hostname;
+        const isHostDomain = isDomain(host);
+        return { host, isHostDomain };
+    } catch {
+        return { host: null, isHostDomain: false };
+    }
 }
 
 export function base64EncodeUnicode(str) {
