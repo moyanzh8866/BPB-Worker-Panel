@@ -1,4 +1,4 @@
-import { getConfigAddresses, generateRemark, randomUpperCase, getRandomPath, base64EncodeUnicode } from './helpers';
+import { getConfigAddresses, generateRemark, randomUpperCase, base64EncodeUnicode, generateWsPath } from './helpers';
 
 export async function getNormalConfigs(isFragment) {
     const settings = globalThis.settings;
@@ -9,18 +9,19 @@ export async function getNormalConfigs(isFragment) {
     const buildConfig = (protocol, addr, port, host, sni, remark) => {
         const isTLS = globalThis.defaultHttpsPorts.includes(port);
         const security = isTLS ? 'tls' : 'none';
-        const path = `${getRandomPath(16)}${settings.proxyIPs.length ? `/${btoa(settings.proxyIPs.join(','))}` : ''}`;
+        
         const config = new URL(`${protocol}://config`);
-        let pathPrefix = '';
+        let pathProtocol = 'vl';
 
-        if (protocol === 'vless') {
+        if (protocol === atob('dmxlc3M=')) {
             config.username = globalThis.userID;
             config.searchParams.append('encryption', 'none');
         } else {
             config.username = globalThis.TRPassword;
-            pathPrefix = 'tr';
+            pathProtocol = 'tr';
         }
 
+        const path = generateWsPath(pathProtocol);
         config.hostname = addr;
         config.port = port;
         config.searchParams.append('host', host);
@@ -31,14 +32,14 @@ export async function getNormalConfigs(isFragment) {
         if (globalThis.client === 'singbox') {
             config.searchParams.append('eh', 'Sec-WebSocket-Protocol');
             config.searchParams.append('ed', '2560');
-            config.searchParams.append('path', `/${pathPrefix}${path}`);
+            config.searchParams.append('path', path);
         } else {
-            config.searchParams.append('path', `/${pathPrefix}${path}?ed=2560`);
+            config.searchParams.append('path', `${path}?ed=2560`);
         }
 
         if (isTLS) {
             config.searchParams.append('sni', sni);
-            config.searchParams.append('fp', 'randomized');
+            config.searchParams.append('fp', settings.fingerprint);
             config.searchParams.append('alpn', 'http/1.1');
 
             if (globalThis.client === 'hiddify-frag') {
@@ -56,17 +57,17 @@ export async function getNormalConfigs(isFragment) {
             const sni = isCustomAddr ? settings.customCdnSni : randomUpperCase(globalThis.hostName);
             const host = isCustomAddr ? settings.customCdnHost : globalThis.hostName;
 
-            const VLRemark = generateRemark(proxyIndex, port, addr, settings.cleanIPs, 'VLESS', configType);
-            const TRRemark = generateRemark(proxyIndex, port, addr, settings.cleanIPs, 'Trojan', configType);
+            const VLRemark = generateRemark(proxyIndex, port, addr, settings.cleanIPs, atob('VkxFU1M='), configType);
+            const TRRemark = generateRemark(proxyIndex, port, addr, settings.cleanIPs, atob('VHJvamFu'), configType);
 
             if (settings.VLConfigs) {
-                const vlessConfig = buildConfig('vless', addr, port, host, sni, VLRemark);
-                VLConfs += `${vlessConfig}\n`;
+                const vlConfig = buildConfig(atob('dmxlc3M='), addr, port, host, sni, VLRemark);
+                VLConfs += `${vlConfig}\n`;
             }
 
             if (settings.TRConfigs) {
-                const trojanConfig = buildConfig('trojan', addr, port, host, sni, TRRemark);
-                TRConfs += `${trojanConfig}\n`;
+                const trConfig = buildConfig(atob('dHJvamFu'), addr, port, host, sni, TRRemark);
+                TRConfs += `${trConfig}\n`;
             }
 
             proxyIndex++;
@@ -88,8 +89,8 @@ export async function getNormalConfigs(isFragment) {
     }
 
     const configs = btoa(VLConfs + TRConfs + chainProxy);
-    const hiddifyHash = base64EncodeUnicode( isFragment ? '💦 BPB Fragment' : '💦 BPB Normal');
-    
+    const hiddifyHash = base64EncodeUnicode(isFragment ? `💦 ${atob('QlBC')} Fragment` : `💦 ${atob('QlBC')} Normal`);
+
     return new Response(configs, {
         status: 200,
         headers: {
@@ -124,7 +125,7 @@ export async function getHiddifyWarpConfigs(isPro) {
         configs += `${config.href}&&detour=${detour.href}\n`;
     });
 
-    const hiddifyHash = base64EncodeUnicode(`💦 BPB Warp${isPro ? ' Pro' : ''}`);
+    const hiddifyHash = base64EncodeUnicode(`💦 ${atob('QlBC')} Warp${isPro ? ' Pro' : ''}`);
     return new Response(btoa(configs), {
         status: 200,
         headers: {

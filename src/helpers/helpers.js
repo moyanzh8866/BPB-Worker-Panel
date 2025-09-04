@@ -38,8 +38,15 @@ export async function handlePanel(request, env) {
 }
 
 export async function handleError(error) {
-    const message = encodeURIComponent(error.message);
-    return Response.redirect(`${globalThis.urlOrigin}/error?message=${message}`, 302);
+    const encodedHtml = __ERROR_HTML_CONTENT__;
+    const html = new TextDecoder('utf-8')
+        .decode(Uint8Array.from(atob(encodedHtml), c => c.charCodeAt(0)))
+        .replace('__ERROR_MESSAGE__', error.message);
+
+    return new Response(html, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html' }
+    });
 }
 
 export async function handleLogin(request, env) {
@@ -202,7 +209,7 @@ async function getWarpConfigs(request, env) {
 
     try {
         warpEndpoints.forEach((endpoint, index) => {
-            zip.file(`BPB-Warp-${index + 1}.conf`, trimLines(
+            zip.file(`${atob('QlBC')}-Warp-${index + 1}.conf`, trimLines(
                 `[Interface]
                 PrivateKey = ${privateKey}
                 Address = 172.16.0.2/32, ${warpIPv6}
@@ -222,7 +229,7 @@ async function getWarpConfigs(request, env) {
         return new Response(arrayBuffer, {
             headers: {
                 "Content-Type": "application/zip",
-                "Content-Disposition": `attachment; filename="BPB-Warp-${isPro ? "Pro-" : ""}configs.zip"`,
+                "Content-Disposition": `attachment; filename="${atob('QlBC')}-Warp-${isPro ? "Pro-" : ""}configs.zip"`,
             },
         });
     } catch (error) {
@@ -247,7 +254,8 @@ async function renderPanel(request, env) {
         if (!auth) return Response.redirect(`${globalThis.urlOrigin}/login`, 302);
     }
 
-    const html = __PANEL_HTML_CONTENT__.replace(/__PANEL_VERSION__/g, globalThis.panelVersion);
+    const encodedHtml = __PANEL_HTML_CONTENT__;
+    const html = new TextDecoder('utf-8').decode(Uint8Array.from(atob(encodedHtml), c => c.charCodeAt(0)));
     return new Response(html, {
         headers: { 'Content-Type': 'text/html' }
     });
@@ -257,24 +265,18 @@ async function renderLogin(request, env) {
     const auth = await Authenticate(request, env);
     if (auth) return Response.redirect(`${urlOrigin}/panel`, 302);
 
-    const html = __LOGIN_HTML_CONTENT__.replace(/__PANEL_VERSION__/g, globalThis.panelVersion);
+    const encodedHtml = __LOGIN_HTML_CONTENT__;
+    const html = new TextDecoder('utf-8').decode(Uint8Array.from(atob(encodedHtml), c => c.charCodeAt(0)));
     return new Response(html, {
         headers: { 'Content-Type': 'text/html' }
     });
 }
 
 export async function renderSecrets() {
-    const html = __SECRETS_HTML_CONTENT__.replace(/__PANEL_VERSION__/g, globalThis.panelVersion);
+    const encodedHtml = __SECRETS_HTML_CONTENT__;
+    const html = new TextDecoder('utf-8').decode(Uint8Array.from(atob(encodedHtml), c => c.charCodeAt(0)));
     return new Response(html, {
         headers: { 'Content-Type': 'text/html' },
-    });
-}
-
-export async function renderError() {
-    const html = __ERROR_HTML_CONTENT__.replace(/__PANEL_VERSION__/g, globalThis.panelVersion);
-    return new Response(html, {
-        status: 200,
-        headers: { 'Content-Type': 'text/html' }
     });
 }
 

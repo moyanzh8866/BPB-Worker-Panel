@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 localStorage.getItem('darkMode') === 'enabled' && document.body.classList.add('dark-mode');
 
 const form = document.getElementById("configForm");
@@ -18,6 +17,9 @@ const [
 
 const defaultHttpsPorts = [443, 8443, 2053, 2083, 2087, 2096];
 const defaultHttpPorts = [80, 8080, 8880, 2052, 2082, 2086, 2095];
+const ipv6Regex = /^\[(?:(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,7}:|(?:[a-fA-F0-9]{1,4}:){1,6}:[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,5}(?::[a-fA-F0-9]{1,4}){1,2}|(?:[a-fA-F0-9]{1,4}:){1,4}(?::[a-fA-F0-9]{1,4}){1,3}|(?:[a-fA-F0-9]{1,4}:){1,3}(?::[a-fA-F0-9]{1,4}){1,4}|(?:[a-fA-F0-9]{1,4}:){1,2}(?::[a-fA-F0-9]{1,4}){1,5}|[a-fA-F0-9]{1,4}:(?::[a-fA-F0-9]{1,4}){1,6}|:(?::[a-fA-F0-9]{1,4}){1,7})\](?:\/(?:12[0-8]|1[01]?\d|[0-9]?\d))?$/;
+const ipv4Regex = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\/(?:\d|[12]\d|3[0-2]))?$/;
+const domainRegex = /^(?=.{1,253}$)(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)\.)+[a-zA-Z]{2,63}$/;
 
 fetch('/panel/settings')
     .then(async response => response.json())
@@ -199,7 +201,7 @@ function generateSubUrl(path, app, tag, hiddifyType, singboxType) {
     const url = new URL(window.location.href);
     url.pathname = `/sub/${path}/${globalThis.subPath}`;
     app && url.searchParams.append('app', app);
-    if (tag) url.hash = `💦 BPB ${tag}`;
+    if (tag) url.hash = `💦 ${atob('QlBC')} ${tag}`;
 
     if (singboxType) return `sing-box://import-remote-profile?url=${url.href}`;
     if (hiddifyType) return `hiddify://import/${url.href}`;
@@ -238,10 +240,10 @@ function exportSettings() {
     const form = validateSettings();
     const data = JSON.stringify(form, null, 4);
     const encodedData = btoa(data);
-    downloadJSON(encodedData, "BPB-settings.dat");
+    downloadJSON(encodedData, `${atob('QlBC')}-settings.dat`);
 }
 
-function importSettings(event) {
+function importSettings() {
     const input = document.getElementById('fileInput');
     input.value = '';
     input.click();
@@ -403,6 +405,7 @@ function validateSettings() {
     const validations = [
         validateMultipleHostNames(elementsToCheck),
         validateProxyIPs(),
+        validateNAT64Prefixes(),
         validateWarpEndpoints(),
         validateMinMax(),
         validateChainProxy(),
@@ -450,7 +453,9 @@ function updateSettings(event, data) {
     event.preventDefault();
     event.stopPropagation();
 
-    const form = data ? data : validateSettings();
+    const validatedForm = validateSettings();
+    if (!validatedForm) return false;
+    const form = data ? data : validatedForm;
     const applyButton = document.getElementById('applyButton');
     document.body.style.cursor = 'wait';
     const applyButtonVal = applyButton.value;
@@ -502,16 +507,25 @@ function validateSanctionDns() {
     return true;
 }
 
+function parseHostPort(input) {
+    const regex = /^(?<host>\[.*?\]|[^:]+)(?::(?<port>\d+))?$/;
+    const match = input.match(regex);
+    
+    if (!match) return null;
+
+    return {
+        host: match.groups.host,
+        port: match.groups.port ? +match.groups.port : null
+    };
+}
+
 function isValidHostName(value, isHost) {
-    const ipv6Regex = /^\[(?:(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,7}:|(?:[a-fA-F0-9]{1,4}:){1,6}:[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,5}(?::[a-fA-F0-9]{1,4}){1,2}|(?:[a-fA-F0-9]{1,4}:){1,4}(?::[a-fA-F0-9]{1,4}){1,3}|(?:[a-fA-F0-9]{1,4}:){1,3}(?::[a-fA-F0-9]{1,4}){1,4}|(?:[a-fA-F0-9]{1,4}:){1,2}(?::[a-fA-F0-9]{1,4}){1,5}|[a-fA-F0-9]{1,4}:(?::[a-fA-F0-9]{1,4}){1,6}|:(?::[a-fA-F0-9]{1,4}){1,7})\](?:\/(?:12[0-8]|1[01]?\d|[0-9]?\d))?/;
-    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\/(?:\d|[12]\d|3[0-2]))?/;
-    const domainRegex = /^(?=.{1,253}$)(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)\.)+[a-zA-Z]{2,63}/;
-    const portRegex = /:(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]?\d{1,4})$/;
-    const append = isHost ? portRegex.source : '$';
-    const ipv6Reg = new RegExp(ipv6Regex.source + append, 'gm');
-    const ipv4Reg = new RegExp(ipv4Regex.source + append, 'gm');
-    const domainReg = new RegExp(domainRegex.source + append, 'gm');
-    return ipv4Reg.test(value) || ipv6Reg.test(value) || domainReg.test(value);
+    const hostPort = parseHostPort(value.trim());
+    if (!hostPort) return false;
+    const { host, port } = hostPort;
+    if (port && (port > 65535 || port < 1)) return false;
+    if (isHost && !port) return false;
+    return ipv6Regex.test(host) || ipv4Regex.test(host) || domainRegex.test(host);
 }
 
 function validateMultipleHostNames(elements) {
@@ -519,10 +533,10 @@ function validateMultipleHostNames(elements) {
 
     const ips = [];
     elements.forEach(id => ips.push(...getValue(id)));
-    const invalidIPs = ips?.filter(value => value && !isValidHostName(value.trim()));
+    const invalidIPs = ips?.filter(value => !isValidHostName(value));
 
     if (invalidIPs.length) {
-        alert('⛔ Invalid IPs or Domains.\n👉 Please enter each IP/domain in a new line.\n\n' + invalidIPs.map(ip => '⚠️ ' + ip).join('\n'));
+        alert('⛔ Invalid IPs or Domains.\n👉 Please enter each IP/domain in a new line.\n\n' + invalidIPs.map(ip => `⚠️ ${ip}`).join('\n'));
         return false;
     }
 
@@ -530,11 +544,23 @@ function validateMultipleHostNames(elements) {
 }
 
 function validateProxyIPs() {
-    const proxyIPs = document.getElementById('proxyIPs').value?.split('\n').filter(Boolean).map(ip => ip.trim());
-    const invalidValues = proxyIPs?.filter(value => !isValidHostName(value) && !isValidHostName(value, true));
+    const proxyIPs = document.getElementById('proxyIPs').value?.split('\n').filter(Boolean);
+    const invalidValues = proxyIPs?.filter(value => !isValidHostName(value));
 
     if (invalidValues.length) {
-        alert('⛔ Invalid proxy IPs.\n👉 Please enter each IP/domain in a new line.\n\n' + invalidValues.map(ip => '⚠️ ' + ip).join('\n'));
+        alert('⛔ Invalid proxy IPs.\n👉 Please enter each IP/domain in a new line.\n\n' + invalidValues.map(ip => `⚠️ ${ip}`).join('\n'));
+        return false;
+    }
+
+    return true;
+}
+
+function validateNAT64Prefixes() {
+    const nat64Prefixes = document.getElementById('nat64Prefixes').value?.split('\n').filter(Boolean).map(prefix => prefix.trim());
+    const invalidValues = nat64Prefixes?.filter(value => !ipv6Regex.test(value));
+
+    if (invalidValues.length) {
+        alert('⛔ Invalid NAT64 prefix.\n👉 Please enter each prefix in a new line using [].\n\n' + invalidValues.map(ip => `⚠️ ${ip}`).join('\n'));
         return false;
     }
 
@@ -542,11 +568,11 @@ function validateProxyIPs() {
 }
 
 function validateWarpEndpoints() {
-    const warpEndpoints = document.getElementById('warpEndpoints').value?.split('\n');
-    const invalidEndpoints = warpEndpoints?.filter(value => value && !isValidHostName(value.trim(), true));
+    const warpEndpoints = document.getElementById('warpEndpoints').value?.split('\n').filter(Boolean);
+    const invalidEndpoints = warpEndpoints?.filter(value => !isValidHostName(value, true));
 
     if (invalidEndpoints.length) {
-        alert('⛔ Invalid endpoint.\n\n' + invalidEndpoints.map(endpoint => '⚠️ ' + endpoint).join('\n'));
+        alert('⛔ Invalid endpoint.\n\n' + invalidEndpoints.map(endpoint => `⚠️ ${endpoint}`).join('\n'));
         return false;
     }
 
@@ -584,7 +610,6 @@ function validateMinMax() {
 }
 
 function validateChainProxy() {
-
     const chainProxy = document.getElementById('outProxy').value?.trim();
     const isVless = /vless:\/\/[^\s@]+@[^\s:]+:[^\s]+/.test(chainProxy);
     const hasSecurity = /security=/.test(chainProxy);
