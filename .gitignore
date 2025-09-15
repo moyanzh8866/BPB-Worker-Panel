@@ -1,6 +1,7 @@
 *
 !.gitignore
 !package.json
+!jsconfig.json
 !src/
 !src/**
 !scripts/
@@ -10,5 +11,6 @@
 !README_fa.md
 !README.md
 !RELEASE.md
+!NAT64Prefixes.md
 !docs
 !docs/**

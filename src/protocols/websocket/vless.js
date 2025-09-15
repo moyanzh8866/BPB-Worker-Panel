@@ -1,7 +1,6 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable no-undef */
-import { isValidUUID } from '../helpers/helpers';
-import { handleTCPOutBound, makeReadableWebSocketStream, WS_READY_STATE_OPEN } from './common';
+import { isValidUUID } from '#common/handlers';
+import { globalConfig } from '#common/init';
+import { handleTCPOutBound, makeReadableWebSocketStream, WS_READY_STATE_OPEN } from '#protocols/websocket/common';
 
 export async function VlOverWSHandler(request) {
     const webSocketPair = new WebSocketPair();
@@ -46,7 +45,7 @@ export async function VlOverWSHandler(request) {
                 rawDataIndex,
                 VLVersion = new Uint8Array([0, 0]),
                 isUDP,
-            } = processVLHeader(chunk, globalThis.userID);
+            } = processVLHeader(chunk, globalConfig.userID);
             
             address = addressRemote;
             portWithRandomLog = `${portRemote}--${Math.random()} ${isUDP ? "udp " : "tcp "} `;
@@ -266,7 +265,7 @@ async function handleUDPOutBound(webSocket, VLResponseHeader, log) {
             new WritableStream({
                 async write(chunk) {
                     const resp = await fetch(
-                        dohURL, // dns server url
+                        globalConfig.dohURL, // dns server url
                         {
                             method: "POST",
                             headers: {

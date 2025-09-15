@@ -1,21 +1,43 @@
-import { Authenticate, generateJWTToken, resetPassword } from "../authentication/auth";
-import { getClashNormalConfig, getClashWarpConfig } from "../cores-configs/clash";
-import { extractWireguardParams } from "../cores-configs/helpers";
-import { getHiddifyWarpConfigs, getNormalConfigs } from "../cores-configs/normalConfigs";
-import { getSingBoxCustomConfig, getSingBoxWarpConfig } from "../cores-configs/sing-box";
-import { getXrayCustomConfigs, getXrayWarpConfigs } from "../cores-configs/xray";
-import { getDataset, updateDataset } from "../kv/handlers";
+import { Authenticate, generateJWTToken, resetPassword } from "#auth";
+import { getClashNormalConfig, getClashWarpConfig } from "#configs/clash";
+import { extractWireguardParams } from "#configs/utils";
+import { getSingBoxCustomConfig, getSingBoxWarpConfig } from "#configs/sing-box";
+import { getXrayCustomConfigs, getXrayWarpConfigs } from "#configs/xray";
+import { getDataset, updateDataset } from "#kv";
 import JSZip from "jszip";
-import { fetchWarpConfigs } from "../protocols/warp";
+import { fetchWarpConfigs } from "#protocols/warp";
+import { globalConfig, httpConfig, wsConfig } from "#common/init";
+import { VlOverWSHandler } from "#protocols/websocket/vless";
+import { TrOverWSHandler } from "#protocols/websocket/trojan";
+export let settings = {}
 
-export function isValidUUID(uuid) {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(uuid);
+export async function handleWebsocket(request) {
+    const encodedPathConfig = globalConfig.pathName.replace("/", "") || '';
+
+    try {
+        const { protocol, mode, panelIPs } = JSON.parse(atob(encodedPathConfig));
+        Object.assign(wsConfig, {
+            wsProtocol: protocol,
+            proxyMode: mode,
+            panelIPs: panelIPs
+        });
+
+        switch (protocol) {
+            case 'vl':
+                return await VlOverWSHandler(request);
+            case 'tr':
+                return await TrOverWSHandler(request);
+            default:
+                return await fallback(request);
+        }
+
+    } catch (error) {
+        return new Response('Failed to parse WebSocket path config', { status: 400 });
+    }
 }
 
 export async function handlePanel(request, env) {
-
-    switch (globalThis.pathName) {
+    switch (globalConfig.pathName) {
         case '/panel':
             return await renderPanel(request, env);
         case '/panel/settings':
@@ -38,10 +60,7 @@ export async function handlePanel(request, env) {
 }
 
 export async function handleError(error) {
-    const encodedHtml = __ERROR_HTML_CONTENT__;
-    const html = new TextDecoder('utf-8')
-        .decode(Uint8Array.from(atob(encodedHtml), c => c.charCodeAt(0)))
-        .replace('__ERROR_MESSAGE__', error.message);
+    const html = hexToString(__ERROR_HTML_CONTENT__).replace('__ERROR_MESSAGE__', error.message);
 
     return new Response(html, {
         status: 200,
@@ -50,23 +69,21 @@ export async function handleError(error) {
 }
 
 export async function handleLogin(request, env) {
-    if (globalThis.pathName === '/login') return await renderLogin(request, env);
-    if (globalThis.pathName === '/login/authenticate') return await generateJWTToken(request, env);
+    if (globalConfig.pathName === '/login') return await renderLogin(request, env);
+    if (globalConfig.pathName === '/login/authenticate') return await generateJWTToken(request, env);
     return await fallback(request);
 }
 
 export async function handleSubscriptions(request, env) {
-    const { proxySettings: settings } = await getDataset(request, env);
-    globalThis.settings = settings;
-    const { pathName, client, subPath } = globalThis;
+    const dataset = await getDataset(request, env);
+    settings = dataset.settings;
+    const { client, subPath } = httpConfig;
+    const path = decodeURIComponent(globalConfig.pathName);
 
-    switch (decodeURIComponent(pathName)) {
+    switch (path) {
         case `/sub/normal/${subPath}`:
-            return await getNormalConfigs(false);
-
-        case `/sub/full-normal/${subPath}`:
             switch (client) {
-                case 'sfa':
+                case 'sing-box':
                     return await getSingBoxCustomConfig(env, false);
                 case 'clash':
                     return await getClashNormalConfig(env);
@@ -78,22 +95,20 @@ export async function handleSubscriptions(request, env) {
 
         case `/sub/fragment/${subPath}`:
             switch (client) {
-                case 'sfa':
+                case 'sing-box':
                     return await getSingBoxCustomConfig(env, true);
-                case 'hiddify-frag':
-                    return await getNormalConfigs(true);
-                default:
+                case 'xray':
                     return await getXrayCustomConfigs(env, true);
+                default:
+                    break;
             }
 
         case `/sub/warp/${subPath}`:
             switch (client) {
                 case 'clash':
                     return await getClashWarpConfig(request, env, false);
-                case 'singbox':
+                case 'sing-box':
                     return await getSingBoxWarpConfig(request, env);
-                case 'hiddify':
-                    return await getHiddifyWarpConfigs(false);
                 case 'xray':
                     return await getXrayWarpConfigs(request, env, false);
                 default:
@@ -102,12 +117,10 @@ export async function handleSubscriptions(request, env) {
 
         case `/sub/warp-pro/${subPath}`:
             switch (client) {
-                case 'clash-pro':
+                case 'clash':
                     return await getClashWarpConfig(request, env, true);
-                case 'hiddify-pro':
-                    return await getHiddifyWarpConfigs(true);
                 case 'xray-knocker':
-                case 'xray-pro':
+                case 'xray':
                     return await getXrayWarpConfigs(request, env, true);
                 default:
                     break;
@@ -141,26 +154,22 @@ async function resetSettings(request, env) {
 }
 
 async function getSettings(request, env) {
-    try {
-        const isPassSet = await env.kv.get('pwd') ? true : false;
-        const auth = await Authenticate(request, env);
-        if (!auth) return await respond(false, 401, 'Unauthorized or expired session.', { isPassSet });
-        const { proxySettings } = await getDataset(request, env);
-        const settings = {
-            proxySettings,
-            isPassSet,
-            subPath: globalThis.subPath
-        };
+    const isPassSet = await env.kv.get('pwd') ? true : false;
+    const auth = await Authenticate(request, env);
+    if (!auth) return await respond(false, 401, 'Unauthorized or expired session.', { isPassSet });
+    const dataset = await getDataset(request, env);
+    const data = {
+        proxySettings: dataset.settings,
+        isPassSet,
+        subPath: httpConfig.subPath
+    };
 
-        return await respond(true, 200, null, settings);
-    } catch (error) {
-        throw new Error(error);
-    }
+    return await respond(true, 200, null, data);
 }
 
 export async function fallback(request) {
     const url = new URL(request.url);
-    url.hostname = globalThis.fallbackDomain;
+    url.hostname = globalConfig.fallbackDomain;
     url.protocol = 'https:';
     const newRequest = new Request(url.toString(), {
         method: request.method,
@@ -185,13 +194,13 @@ async function getMyIP(request) {
 }
 
 async function getWarpConfigs(request, env) {
-    const isPro = globalThis.client === 'amnezia';
+    const isPro = httpConfig.client === 'amnezia';
     const auth = await Authenticate(request, env);
     if (!auth) return new Response('Unauthorized or expired session.', { status: 401 });
-    const { warpConfigs, proxySettings } = await getDataset(request, env);
+    const { warpConfigs, settings } = await getDataset(request, env);
     const warpConfig = extractWireguardParams(warpConfigs, false);
     const { warpIPv6, publicKey, privateKey } = warpConfig;
-    const { warpEndpoints, amneziaNoiseCount, amneziaNoiseSizeMin, amneziaNoiseSizeMax } = proxySettings;
+    const { warpEndpoints, amneziaNoiseCount, amneziaNoiseSizeMin, amneziaNoiseSizeMax } = settings;
     const zip = new JSZip();
     const trimLines = (string) => string.split("\n").map(line => line.trim()).join("\n");
     const amneziaNoise = isPro
@@ -251,11 +260,10 @@ async function renderPanel(request, env) {
     const pwd = await env.kv.get('pwd');
     if (pwd) {
         const auth = await Authenticate(request, env);
-        if (!auth) return Response.redirect(`${globalThis.urlOrigin}/login`, 302);
+        if (!auth) return Response.redirect(`${httpConfig.urlOrigin}/login`, 302);
     }
 
-    const encodedHtml = __PANEL_HTML_CONTENT__;
-    const html = new TextDecoder('utf-8').decode(Uint8Array.from(atob(encodedHtml), c => c.charCodeAt(0)));
+    const html = hexToString(__PANEL_HTML_CONTENT__);
     return new Response(html, {
         headers: { 'Content-Type': 'text/html' }
     });
@@ -263,18 +271,16 @@ async function renderPanel(request, env) {
 
 async function renderLogin(request, env) {
     const auth = await Authenticate(request, env);
-    if (auth) return Response.redirect(`${urlOrigin}/panel`, 302);
+    if (auth) return Response.redirect(`${httpConfig.urlOrigin}/panel`, 302);
 
-    const encodedHtml = __LOGIN_HTML_CONTENT__;
-    const html = new TextDecoder('utf-8').decode(Uint8Array.from(atob(encodedHtml), c => c.charCodeAt(0)));
+    const html = hexToString(__LOGIN_HTML_CONTENT__);
     return new Response(html, {
         headers: { 'Content-Type': 'text/html' }
     });
 }
 
 export async function renderSecrets() {
-    const encodedHtml = __SECRETS_HTML_CONTENT__;
-    const html = new TextDecoder('utf-8').decode(Uint8Array.from(atob(encodedHtml), c => c.charCodeAt(0)));
+    const html = hexToString(__SECRETS_HTML_CONTENT__);
     return new Response(html, {
         headers: { 'Content-Type': 'text/html' },
     });
@@ -307,4 +313,15 @@ export async function respond(success, status, message, body, customHeaders) {
             'Content-Type': message ? 'text/plain' : 'application/json'
         }
     });
+}
+
+function hexToString(hex) {
+    const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+    const decoder = new TextDecoder();
+    return decoder.decode(bytes);
+}
+
+export function isValidUUID(uuid) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
 }
