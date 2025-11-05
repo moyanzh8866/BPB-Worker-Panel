@@ -29,8 +29,8 @@ This project is aimed to provide a user panel to access FREE, SECURE and PRIVATE
 3. **Versatile Protocols:** Provides VLESS, Trojan and Wireguard (Warp) protocols.
 4. **Warp Pro configs:** Optimized Warp for crucial circumstances.
 5. **Fragment support:** Supports Fragment functionality for crucial network situations.
-6. **Comprehensive Routing Rules:** Bypassing Iran/China/Russia and LAN, Blocking QUIC, Porn, Ads, Malwares, Phishing and also bypassing sanctions.
-7. **Chain Proxy:** Capable of adding a chain proxy to fix IP.
+6. **Comprehensive Routing Rules:** Bypassing Iran/China/Russia, Blocking QUIC, Porn, Ads, Malwares, Phishing and also bypassing sanctions.
+7. **Chain Proxy:** Capable of adding a chain proxy (VLESS, Trojan, Shadowsocks, socks and http) to fix IP.
 8. **Broad client compatibility:** Offers subscription links for Xray, Sing-box and Clash-Mihomo core clients.
 9. **Password-protected panel:** Provides secure and private panel with password protection.
 10. **Fully customizable:** Supports setting up clean IP-domains, Proxy IPs, DNS servers, choosing ports and protocols, Warp endpoints and more.
@@ -38,7 +38,7 @@ This project is aimed to provide a user panel to access FREE, SECURE and PRIVATE
 ## Limitations
 
 1. **UDP transport**: VLESS and Trojan protocols on workers do not handle **UDP** properly, so it is disabled by default (affecting features like Telegram video calls), UDP DNS is also unsupported. DoH is enabled by default for enhanced security.
-2. **Request limit**: each worker supports 100K requests per day for VLESS and Trojan, suitable for 2-3 users. You can use custom limitless Warp configurations.
+2. **Request limit**: each worker supports 100K requests per day for VLESS and Trojan, suitable for 2-3 users. You can use limitless Warp configs.
 
 ## Getting started
 
@@ -49,7 +49,7 @@ This project is aimed to provide a user panel to access FREE, SECURE and PRIVATE
 
 ## Supported Clients
 
-|       Client        |      Version      |      Fragment      |      Warp Pro      |
+|       Client        |      Version      |  Fragment support  |  Warp Pro support  |
 | :-----------------: | :---------------: | :----------------: | :----------------: |
 |     **v2rayNG**     | 1.10.11 or higher | :heavy_check_mark: | :heavy_check_mark: |
 |     **MahsaNG**     |   14 or higher    | :heavy_check_mark: | :heavy_check_mark: |

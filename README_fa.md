@@ -1,6 +1,6 @@
 <h1 align="center">پنل BPB</h1>
 
-#### 🌏 [English](README.md)
+#### 🌏 Readme in [English](README.md)
 
 <p align="center">
   <img src="docs/assets/images/panel-overview.jpg">
@@ -29,8 +29,8 @@
 - **پروتکل‌های متنوع**: ارائه کانفیگ‌های VLESS، Trojan و Wireguard (Warp).
 - **کانفیگ‌های Warp Pro**: کانفیگ‌های Warp بهینه‌شده برای شرایط خاص ایران.
 - **پشتیبانی از Fragment**: اتصال حتی در صورت فیلتر شدن دامنه.
-- **قوانین مسیریابی کامل**: دور زدن سایت‌های ایرانی، چینی، روسی و LAN، مسدود کردن QUIC، محتوای پورن، تبلیغات، بدافزارها، فیشینگ و در زدن سایت‌های تحریمی.
-- **زنجیره‌ی Proxy**: می‌تونید یه Proxy زنجیره‌ای اضافه کنید تا IP ثابت بشه.
+- **قوانین مسیریابی کامل**: دور زدن سایت‌های ایرانی، چینی و روسی، مسدود کردن QUIC، محتوای پورن، تبلیغات، بدافزارها، فیشینگ و در زدن سایت‌های تحریمی.
+- **زنجیره‌ی Proxy**: می‌تونید یه Proxy زنجیره‌ای از نوع VLESS، Trojan، Shadowsocks، Socks یا http اضافه کنید تا IP ثابت بشه.
 - **پشتیبانی از برنامه‌های مختلف**: لینک‌های اشتراک برای برنامه‌های با هسته‌های Xray، Sing-box و Clash-Mihomo.
 - **پنل امن با رمز عبور**: پنل محافظت شده با رمز عبور.
 - **سفارشی‌سازی کامل**: تنظیم IP تمیز، Proxy IP، سرورهای DNS، انتخاب پورت‌ها و پروتکل‌ها، Warp Endpoint و خیلی امکانات دیگه.
@@ -51,19 +51,19 @@
 
 <div dir="rtl">
 
-|       Client        |     Version      |      Fragment      |      Warp Pro      |
-| :-----------------: | :--------------: | :----------------: | :----------------: |
-|     **v2rayNG**     | 1.10.11 و بالاتر | :heavy_check_mark: | :heavy_check_mark: |
-|     **MahsaNG**     |   14 و بالاتر    | :heavy_check_mark: | :heavy_check_mark: |
-|     **v2rayN**      | 7.14.6 و بالاتر  | :heavy_check_mark: | :heavy_check_mark: |
-|   **v2rayN-PRO**    |   2.0 و بالاتر   | :heavy_check_mark: | :heavy_check_mark: |
-|    **Sing-box**     | 1.12.0 و بالاتر  | :heavy_check_mark: |        :x:         |
-|    **Streisand**    | 1.6.60 و بالاتر  | :heavy_check_mark: | :heavy_check_mark: |
-|   **Clash Meta**    |                  |        :x:         | :heavy_check_mark: |
-| **Clash Verge Rev** |                  |        :x:         | :heavy_check_mark: |
-|     **FLClash**     |                  |        :x:         | :heavy_check_mark: |
-|   **AmneziaVPN**    |                  |        :x:         | :heavy_check_mark: |
-|    **WG Tunnel**    |                  |        :x:         | :heavy_check_mark: |
+|       Client        |     Version      | پشتیبانی از Fragment | پشتیبانی از Warp Pro |
+| :-----------------: | :--------------: | :------------------: | :------------------: |
+|     **v2rayNG**     | 1.10.11 و بالاتر |  :heavy_check_mark:  |  :heavy_check_mark:  |
+|     **MahsaNG**     |   14 و بالاتر    |  :heavy_check_mark:  |  :heavy_check_mark:  |
+|     **v2rayN**      | 7.14.6 و بالاتر  |  :heavy_check_mark:  |  :heavy_check_mark:  |
+|   **v2rayN-PRO**    |   2.0 و بالاتر   |  :heavy_check_mark:  |  :heavy_check_mark:  |
+|    **Sing-box**     | 1.12.0 و بالاتر  |  :heavy_check_mark:  |         :x:          |
+|    **Streisand**    | 1.6.60 و بالاتر  |  :heavy_check_mark:  |  :heavy_check_mark:  |
+|   **Clash Meta**    |                  |         :x:          |  :heavy_check_mark:  |
+| **Clash Verge Rev** |                  |         :x:          |  :heavy_check_mark:  |
+|     **FLClash**     |                  |         :x:          |  :heavy_check_mark:  |
+|   **AmneziaVPN**    |                  |         :x:          |  :heavy_check_mark:  |
+|    **WG Tunnel**    |                  |         :x:          |  :heavy_check_mark:  |
 
 </div>
 

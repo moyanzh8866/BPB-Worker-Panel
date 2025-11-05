@@ -63,15 +63,16 @@ export function extractWireguardParams(warpConfigs, isWoW) {
     };
 }
 
-export function generateRemark(index, port, address, cleanIPs, protocol, configType) {
+export function generateRemark(index, port, address, protocol, configType, isChain) {
     let addressType;
+    const chainSign = isChain ? '🔗 ' : '';
     const type = configType ? ` ${configType}` : '';
 
-    cleanIPs.includes(address)
+    settings.cleanIPs.includes(address)
         ? addressType = 'Clean IP'
         : addressType = isDomain(address) ? 'Domain' : isIPv4(address) ? 'IPv4' : isIPv6(address) ? 'IPv6' : '';
 
-    return `💦 ${index} - ${protocol}${type} - ${addressType} : ${port}`;
+    return `💦 ${index} - ${chainSign}${protocol}${type} - ${addressType} : ${port}`;
 }
 
 export function randomUpperCase(str) {
@@ -164,5 +165,25 @@ export function parseHostPort(input, brackets) {
     const port = match.groups.port ? parseInt(match.groups.port, 10) : null;
 
     return { host, port };
+}
+
+export function isHttps(port) {
+    return httpConfig.defaultHttpsPorts.includes(port);
+}
+
+export async function parseChainProxy(env, buildOutbound) {
+    try {
+        return buildOutbound();
+    } catch (error) {
+        console.log('An error occured while parsing chain proxy: ', error);
+        const settings = await env.kv.get("proxySettings", { type: 'json' });
+        await env.kv.put("proxySettings", JSON.stringify({
+            ...settings,
+            outProxy: '',
+            outProxyParams: {}
+        }));
+
+        return undefined;
+    }
 }
 
