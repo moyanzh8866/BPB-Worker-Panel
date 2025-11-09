@@ -4,82 +4,51 @@
 
 ## Remote DNS
 
-By default, the remote DNS is Google DNS over HTTPS (DoH).
+By default, the remote DNS is Google DNS over HTTPS (DoH). However, you can use other DoH or DoT servers, except Cloudflare DNS servers:
 
-```title="Default Remote DNS"
-https://8.8.8.8/dns-query
-```
-
-!!! tip
-    From version 2.5.5 onward, you can use some well known DoH or DoT servers:
-    ```
-    https://dns.google/dns-query
-    ```
-    ```
-    https://dns.adguard-dns.com/dns-query
-    ```
-    ```
-    https://dns.quad9.net/dns-query
-    ```
-    ```
-    tls://dns.google
-    ```
-
-## Local DNS
-
-By default, the local DNS server is Google DNS.
-
-```title="Default Local DNS"
-8.8.8.8
-```
-
-Many DNS servers are available to use as Local DNS in shape of IP, however you can use **localhost** which uses your ISP DNS server which is fine for routing purposes.
-
-## Fake DNS
-
-You may enable Fake DNS to reduce DNS query latency, but use caution—it may be incompatible with some applications or interfere with system DNS. If you're unsure about its functionality, avoid enabling it.
+!!! tip "Well known DOH and DOT servers"
+    - `https://dns.google/dns-query`
+    - `https://dns.adguard-dns.com/dns-query`
+    - `https://dns.quad9.net/dns-query`
+    - `tls://dns.google`
 
 ## Chain Proxy
 
-As noted, a Proxy IP fixes the IP for Cloudflare target addresses, but node IPs may differ for other targets. A **Chain Proxy** ensures a consistent IP for all targets. You can use a free **VLESS**, **Trojan**, **Shadowsocks**, **Socks**, or **HTTP** config here, even if it’s blocked by your ISP, to permanently fix your IP to the Chain Proxy IP.
+As noted, a Proxy IP fixes the IP for Cloudflare target addresses, but node IPs may differ for other targets. A **Chain Proxy** ensures a consistent IP for all targets. You can use a free config here, even if it’s blocked by your ISP, to permanently fix your IP to the Chain Proxy IP.
+
+### Supported protocols
+
+* VLESS
+* VMess
+* Trojan
+* Shadowsocks
+* Socks
+* Http
+
+### Supported Transports
+
+* TCP
+* TCP http header
+* Websocket
+* GRPC
+* Httpupgrade
+
+### Supported TLS
+
+* TLS
+* Reality
 
 !!! note
     The Chain Proxy config must not be a worker itself, or the final IP will still change.
 
-!!! note
-    VLESS and Trojan configs support:  
-
-    - WS
-    - WS TLS
-    - Httpupgrade
-    - Httpupgrade TLS
-    - GRPC
-    - Reality GRPC
-    - GRPC TLS
-    - TCP
-    - Reality TCP
-    - TCP Header
-    - Reality TCP Header
-    - TCP TLS
-
 !!! info
-    Socks configs can be in these formats:
-
-    - socks://`address`:`port`
-    - socks://`user`:`pass`@`address`:`port`
-
-!!! info
-    HTTP configs can be in these formats:  
-
-    - http://`address`:`port`
-    - http://`user`:`pass`@`address`:`port`
+    Socks and http configs should have username and password, Xray does not support raw configs.
 
 !!! info
     Shadowsocks cannot have any transport like websocket, grpc... and cannot have TLS.
 
 !!! warning
-    - TLS configs for chaining must use port 443.
-    - VLESS and Trojan configs with randomized ALPN values are incompatible with Clash due to lack of Fingerprint
+    VLESS, VMess and Trojan configs with `randomized` ALPN values are incompatible with Clash due to lack of Fingerprint
 
 This setting applies to **Normal** and **Fragment** subscriptions. After applying, update the subscription. The chained configs will be added alongside original configs using 🔗 icon. This way, when Chain Proxy stops working, you still have access to original configs.
 
@@ -94,10 +63,6 @@ For non-**Normal** subscription, you may want to use clean IPs. The panel includ
     When using **Fragment**, Clean IPs do not play a significant role, but some ISPs, like Rightel, may still require them.
 
 To add custom configs alongside default ones, enter clean IPs or domains as shown in the section image and click **Apply**. Updated subscription will import these new configs, which are also added to **Best Ping** and **Best Fragment** configs.
-
-## Enabling IPv6
-
-The panel provides IPv6 configs by default. If your ISP doesn’t support IPv6, disable it to reduce the number of configs and optimize DNS and routing settings.
 
 ## Protocol Selection
 
@@ -121,6 +86,10 @@ Here you can select TLS fingerprint, default to randomized.
 
 By default, **Best** configs test every 30 seconds to identify the optimal config or Fragment value. For low-speed networks during activities like video streaming or gaming, this may cause lag. Adjust the interval between 10 and 90 seconds as needed.
 
+## TCP Fast Open
+
+If your device supports TCP Fast Open and your ISP does not interfere with TFO, you can enable the feature to enhance your connections. Please note that Linux users have to enable TFO before activating this feature.
+
 ## Proxy IP
 
 ### Mode
@@ -134,11 +103,7 @@ You can change the Proxy IP via the panel by applying the change and updating th
 !!! note
     Changing the Proxy IP via the panel requires updating the subscription if the IP stops working. This can disrupt donated configs, as users without an active subscription cannot update them. Use this method only for personal usage. Other methods don’t require subscription updates.
 
-Select a Proxy IP from the following link, which lists IPs by region and ISP:
-
-```text
-https://www.nslookup.io/domains/bpb.yousef.isegaro.com/dns-records/
-```
+Select a Proxy IP [from here](https://www.nslookup.io/domains/bpb.yousef.isegaro.com/dns-records/), which lists IPs by region and ISP.
 
 !!! info
     To use multiple Proxy IPs, fill in them below each other.
@@ -150,11 +115,7 @@ You can change the Proxy IP mode and fill in NAT64 Prefixes via the panel by app
 !!! note
     Changing the NAT64 Prefixes via the panel requires updating the subscription if the IP stops working. This can disrupt donated configs, as users without an active subscription cannot update them. Use this method only for personal usage. Other methods don’t require subscription updates.
 
-Select a NAT64 Prefixes from the following link, which lists IPs by region and ISP:
-
-```text
-https://github.com/bia-pain-bache/BPB-Worker-Panel/blob/main/NAT64Prefixes.md
-```
+You can find available NAT64 Prefixes [in here](https://github.com/bia-pain-bache/BPB-Worker-Panel/blob/main/docs/NAT64Prefixes.md), which lists IPs by region and ISP.
 
 !!! info
     To use multiple Prefixes, fill them in below each other.

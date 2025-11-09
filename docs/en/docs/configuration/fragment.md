@@ -15,8 +15,7 @@ You can also switch Fragment modes and test based on network situation. Usually 
 You can set the parameters based on your ISP's situation.
 
 !!! info
-
-    * Packets have multiple modes. However, `tlshello` only applies to **TLS configurations**; ports like 80, 8080, etc., are not affected.
+    Packets have multiple modes. However, `tlshello` only applies to **TLS configurations**; ports like 80, 8080, etc., are not affected.
 
 !!! tip "Tip for Iranians"
     Currently, fragment performance is significantly more efficient on clients using the **Xray Knocker core**, specifically **MahsaNG** and **v2rayN PRO** clients. This core was developed and customized for conditions in Iran.
@@ -26,3 +25,6 @@ You can set the parameters based on your ISP's situation.
 
 !!! note
     Fragment values have maximum limits. The Length cannot exceed 500, and the Interval cannot exceed 30ms.
+
+!!! warning
+    Max Split feature is recently added to Xray core and is a little bit tricky, so please read Xray documents first before setting any value.

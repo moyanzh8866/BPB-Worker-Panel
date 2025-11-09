@@ -1,5 +1,4 @@
 localStorage.getItem('darkMode') === 'enabled' && document.body.classList.add('dark-mode');
-
 const form = document.getElementById("configForm");
 const [
     selectElements,
@@ -17,14 +16,10 @@ const [
 
 const defaultHttpsPorts = [443, 8443, 2053, 2083, 2087, 2096];
 const defaultHttpPorts = [80, 8080, 8880, 2052, 2082, 2086, 2095];
-const domainRegex = /^(?=.{1,253}$)(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)\.)+[a-zA-Z]{2,63}$/;
-const ipv4Regex = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
-const ipv6Regex = /^\[(?:(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,7}:|(?:[a-fA-F0-9]{1,4}:){1,6}:[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,5}(?::[a-fA-F0-9]{1,4}){1,2}|(?:[a-fA-F0-9]{1,4}:){1,4}(?::[a-fA-F0-9]{1,4}){1,3}|(?:[a-fA-F0-9]{1,4}:){1,3}(?::[a-fA-F0-9]{1,4}){1,4}|(?:[a-fA-F0-9]{1,4}:){1,2}(?::[a-fA-F0-9]{1,4}){1,5}|[a-fA-F0-9]{1,4}:(?::[a-fA-F0-9]{1,4}){1,6}|:(?::[a-fA-F0-9]{1,4}){1,7})\]$/;
 
 fetch('/panel/settings')
     .then(async response => response.json())
-    .then(data => {
-        const { success, status, message, body } = data;
+    .then(({ success, status, message, body }) => {
 
         if (status === 401 && !body.isPassSet) {
             const closeBtn = document.querySelector(".close");
@@ -51,6 +46,15 @@ fetch('/panel/settings')
                 qrcodeContainer.lastElementChild.remove();
             }
         }
+
+        document.querySelectorAll(".toggle-password").forEach(toggle => {
+            toggle.addEventListener("click", function () {
+                const input = this.previousElementSibling;
+                const isPassword = input.type === "password";
+                input.type = isPassword ? "text" : "password";
+                this.textContent = isPassword ? "visibility" : "visibility_off";
+            });
+        });
     });
 
 function initiatePanel(proxySettings) {
@@ -77,7 +81,7 @@ function initiatePanel(proxySettings) {
 function populatePanel(proxySettings) {
     selectElements.forEach(elm => elm.value = proxySettings[elm.id]);
     checkboxElements.forEach(elm => elm.checked = proxySettings[elm.id]);
-    inputElements.forEach(elm => elm.value = proxySettings[elm.id]);
+    inputElements.forEach(elm => elm.value = proxySettings[elm.id] || "");
     textareaElements.forEach(elm => {
         const key = elm.id;
         const element = document.getElementById(key);
@@ -153,8 +157,7 @@ function darkModeToggle() {
 async function getIpDetails(ip) {
     try {
         const response = await fetch('/panel/my-ip', { method: 'POST', body: ip });
-        const data = await response.json();
-        const { success, status, message, body } = data;
+        const { success, status, message, body } = await response.json();
 
         if (!success) {
             throw new Error(`status ${status} - ${message}`);
@@ -221,7 +224,7 @@ function generateSubUrl(path, app, tag, singboxType) {
     app && url.searchParams.append('app', app);
 
     if (tag) {
-        url.hash = `💦 ${atob('QlBC')} ${tag}`;
+        url.hash = `💦 BPB ${tag}`;
     }
 
     return singboxType
@@ -265,7 +268,7 @@ function exportSettings() {
     const form = validateSettings();
     const data = JSON.stringify(form, null, 4);
     const encodedData = btoa(data);
-    downloadJSON(encodedData, `${atob('QlBC')}-settings.dat`);
+    downloadJSON(encodedData, `BPB-settings.dat`);
 }
 
 function importSettings() {
@@ -329,11 +332,16 @@ async function updateWarpConfigs() {
     try {
         const response = await fetch('/panel/update-warp', { method: 'POST', credentials: 'include' });
         const { success, status, message } = await response.json();
+
         document.body.style.cursor = 'default';
         refreshBtn.classList.remove('fa-spin');
 
         if (!success) {
-            alert(`⚠️ An error occured, Please try again!\n⛔ ${message}`);
+            alert(
+                '⚠️ An error occured, Please try again!\n' +
+                `⛔ ${message}`
+            );
+
             throw new Error(`status ${status} - ${message}`);
         }
 
@@ -376,6 +384,20 @@ function handlePortChange(event) {
         alert("⛔ At least one TLS port should be selected!");
         globalThis.activeTlsPorts.push(portField);
         return false;
+    }
+}
+
+function handleRiskyRules(event) {
+    if (event.target.checked) {
+        const proceed = confirm(
+            "⛔ v2ray users should set Geo Assets to Chocolate4U and download assets, otherwise configs won't connect.\n\n" +
+            "❓ Proceed?"
+        );
+
+        if (!proceed) {
+            event.target.checked = false;
+            return;
+        }
     }
 }
 
@@ -435,92 +457,6 @@ function resetSettings() {
         .catch(error => console.error("Reseting settings error:", error.message || error));
 }
 
-function validateSettings() {
-    const configForm = document.getElementById('configForm');
-    const formData = new FormData(configForm);
-
-    const xrayUdpNoises = [];
-    const fields = [
-        'udpXrayNoiseMode',
-        'udpXrayNoisePacket',
-        'udpXrayNoiseDelayMin',
-        'udpXrayNoiseDelayMax',
-        'udpXrayNoiseCount'
-    ].map(field => formData.getAll(field));
-
-    const validations = [
-        validateRemoteDNS(),
-        validateSanctionDns(),
-        validateLocalDNS(),
-        validateMultipleHostNames(),
-        validateProxyIPs(),
-        validateNAT64Prefixes(),
-        validateWarpEndpoints(),
-        validateMinMax(),
-        validateChainProxy(),
-        validateCustomCdn(),
-        validateKnockerNoise(),
-        validateXrayNoises(fields),
-        validateCustomRules()
-    ];
-
-    if (!validations.every(Boolean)) {
-        return false;
-    }
-
-    const form = Object.fromEntries(formData.entries());
-    const [modes, packets, delaysMin, delaysMax, counts] = fields;
-
-    modes.forEach((mode, index) => {
-        xrayUdpNoises.push({
-            type: mode,
-            packet: packets[index],
-            delay: `${delaysMin[index]}-${delaysMax[index]}`,
-            count: counts[index]
-        });
-    });
-
-    form.xrayUdpNoises = xrayUdpNoises;
-    const ports = [
-        ...defaultHttpPorts,
-        ...defaultHttpsPorts
-    ];
-
-    form.ports = ports.reduce((acc, port) => {
-        formData.has(port.toString()) && acc.push(port);
-        return acc;
-    }, []);
-
-    checkboxElements.forEach(elm => {
-        form[elm.id] = formData.has(elm.id);
-    });
-
-    selectElements.forEach(elm => {
-        let value = form[elm.id];
-        if (value === 'true') value = true;
-        if (value === 'false') value = false;
-        form[elm.id] = value;
-    });
-
-    inputElements.forEach(elm => {
-        if (typeof form[elm.id] === 'string') {
-            form[elm.id] = form[elm.id].trim();
-        }
-    });
-
-    numInputElements.forEach(elm => {
-        form[elm.id] = Number(form[elm.id].trim());
-    });
-
-    textareaElements.forEach(elm => {
-        const key = elm.id;
-        const value = form[key];
-        form[key] = value?.split('\n').map(val => val.trim()).filter(Boolean) || [];
-    });
-
-    return form;
-}
-
 function updateSettings(event, data) {
     event.preventDefault();
     event.stopPropagation();
@@ -535,7 +471,7 @@ function updateSettings(event, data) {
     applyButton.value = '⌛ Loading...';
 
     fetch('/panel/update-settings', {
-        method: 'POST',
+        method: 'PUT',
         body: JSON.stringify(form),
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
@@ -560,6 +496,63 @@ function updateSettings(event, data) {
             document.body.style.cursor = 'default';
             applyButton.value = applyButtonVal;
         });
+}
+
+function parseElmValues(id) {
+    return document.getElementById(id).value?.split('\n')
+        .map(value => value.trim())
+        .filter(Boolean) || [];
+}
+
+function getElmValue(id) {
+    return document.getElementById(id).value?.trim();
+}
+
+function isDomain(value) {
+    const domainRegex = /^(?=.{1,253}$)(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)\.)+[a-zA-Z]{2,63}$/;
+    return domainRegex.test(value);
+}
+
+function isIPv4(value) {
+    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
+    return ipv4Regex.test(value);
+}
+
+function isIPv4CIDR(value) {
+    const ipv4CidrRegex = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\/(?:[0-9]|[1-2][0-9]|3[0-2]))?$/;
+    return ipv4CidrRegex.test(value);
+}
+
+function isIPv6(value) {
+    const ipv6Regex = /^\[(?:(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,7}:|(?:[a-fA-F0-9]{1,4}:){1,6}:[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,5}(?::[a-fA-F0-9]{1,4}){1,2}|(?:[a-fA-F0-9]{1,4}:){1,4}(?::[a-fA-F0-9]{1,4}){1,3}|(?:[a-fA-F0-9]{1,4}:){1,3}(?::[a-fA-F0-9]{1,4}){1,4}|(?:[a-fA-F0-9]{1,4}:){1,2}(?::[a-fA-F0-9]{1,4}){1,5}|[a-fA-F0-9]{1,4}:(?::[a-fA-F0-9]{1,4}){1,6}|:(?::[a-fA-F0-9]{1,4}){1,7})\]$/;
+    return ipv6Regex.test(value);
+}
+
+function isIPv6CIDR(value) {
+    const ipv6CidrRegex = /^(?:(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,7}:|(?:[a-fA-F0-9]{1,4}:){1,6}:[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,5}(?::[a-fA-F0-9]{1,4}){1,2}|(?:[a-fA-F0-9]{1,4}:){1,4}(?::[a-fA-F0-9]{1,4}){1,3}|(?:[a-fA-F0-9]{1,4}:){1,3}(?::[a-fA-F0-9]{1,4}){1,4}|(?:[a-fA-F0-9]{1,4}:){1,2}(?::[a-fA-F0-9]{1,4}){1,5}|[a-fA-F0-9]{1,4}:(?::[a-fA-F0-9]{1,4}){1,6}|:(?::[a-fA-F0-9]{1,4}){1,7}|::)(?:\/(?:12[0-8]|1[01]?[0-9]|[0-9]?[0-9]))?$/;
+    return ipv6CidrRegex.test(value);
+}
+
+function parseHostPort(input) {
+    const regex = /^(?<host>\[.*?\]|[^:]+)(?::(?<port>\d+))?$/;
+    const match = input.match(regex);
+
+    if (!match) return null;
+
+    return {
+        host: match.groups.host,
+        port: match.groups.port ? +match.groups.port : null
+    };
+}
+
+function isValidHostName(value, isHost) {
+    const hostPort = parseHostPort(value.trim());
+    if (!hostPort) return false;
+    const { host, port } = hostPort;
+    if (port && (port > 65535 || port < 1)) return false;
+    if (isHost && !port) return false;
+
+    return isIPv6(host) || isIPv4(host) || isDomain(host);
 }
 
 function validateRemoteDNS() {
@@ -599,7 +592,11 @@ function validateRemoteDNS() {
     }
 
     if (cloudflareDNS.includes(url.hostname)) {
-        alert("⛔ Cloudflare DNS is not allowed for workers.\n💡 Please use other public DNS servers like Google, Adguard...");
+        alert(
+            "⛔ Cloudflare DNS is not allowed for workers.\n" +
+            "💡 Please use other public DNS servers like Google, Adguard..."
+        );
+
         return false;
     }
 
@@ -620,7 +617,28 @@ function validateSanctionDns() {
     const isValid = isValidHostName(host, false);
 
     if (!isValid) {
-        alert(`⛔ Invalid IPs or Domains.\n⚠️ ${host}`);
+        alert(
+            '⛔ Invalid IPs or Domains.\n' +
+            `⚠️ ${host}`
+        );
+
+        return false;
+    }
+
+    return true;
+}
+
+function validateWarpDNS() {
+    const dns = getElmValue("warpRemoteDNS");
+    const isValid = isIPv4(dns);
+
+    if (!isValid) {
+        alert(
+            '⛔ Invalid Warp DNS.\n' +
+            '💡 Please fill in an IPv4 address (UDP DNS).\n\n' +
+            `⚠️ ${dns}`
+        );
+
         return false;
     }
 
@@ -629,60 +647,46 @@ function validateSanctionDns() {
 
 function validateLocalDNS() {
     const dns = getElmValue("localDNS");
-    const isValid = ipv4Regex.test(dns) || dns === 'localhost';
+    const isValid = isIPv4(dns) || dns === 'localhost';
 
     if (!isValid) {
-        alert(`⛔ Invalid local DNS.\n💡 Please fill in an IPv4 address or "localhost".\n\n⚠️ ${dns}`);
+        alert(
+            '⛔ Invalid local DNS.\n' +
+            '💡 Please fill in an IPv4 address or "localhost".\n\n' +
+            `⚠️ ${dns}`
+        );
+
         return false;
     }
 
     return true;
 }
 
-function parseElmValues(id) {
-    return document.getElementById(id).value?.split('\n')
-        .map(value => value.trim())
-        .filter(Boolean) || [];
-}
-
-function getElmValue(id) {
-    return document.getElementById(id).value?.trim();
-}
-
-function parseHostPort(input) {
-    const regex = /^(?<host>\[.*?\]|[^:]+)(?::(?<port>\d+))?$/;
-    const match = input.match(regex);
-
-    if (!match) return null;
-
-    return {
-        host: match.groups.host,
-        port: match.groups.port ? +match.groups.port : null
-    };
-}
-
-function isValidHostName(value, isHost) {
-    const hostPort = parseHostPort(value.trim());
-    if (!hostPort) return false;
-    const { host, port } = hostPort;
-    if (port && (port > 65535 || port < 1)) return false;
-    if (isHost && !port) return false;
-
-    return ipv6Regex.test(host) || ipv4Regex.test(host) || domainRegex.test(host);
-}
-
 function validateCustomRules() {
-    const ipv4CidrRegex = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\/(?:[0-9]|[1-2][0-9]|3[0-2]))?$/;
-    const ipv6CidrRegex = /^(?:(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,7}:|(?:[a-fA-F0-9]{1,4}:){1,6}:[a-fA-F0-9]{1,4}|(?:[a-fA-F0-9]{1,4}:){1,5}(?::[a-fA-F0-9]{1,4}){1,2}|(?:[a-fA-F0-9]{1,4}:){1,4}(?::[a-fA-F0-9]{1,4}){1,3}|(?:[a-fA-F0-9]{1,4}:){1,3}(?::[a-fA-F0-9]{1,4}){1,4}|(?:[a-fA-F0-9]{1,4}:){1,2}(?::[a-fA-F0-9]{1,4}){1,5}|[a-fA-F0-9]{1,4}:(?::[a-fA-F0-9]{1,4}){1,6}|:(?::[a-fA-F0-9]{1,4}){1,7}|::)(?:\/(?:12[0-8]|1[01]?[0-9]|[0-9]?[0-9]))?$/;
-    const invalidValues = [
+    const invalidDomainIpValues = [
         'customBypassRules',
-        'customBlockRules',
-        'customBypassSanctionRules'
+        'customBlockRules'
     ].flatMap(parseElmValues)
-        .filter(value => !ipv4CidrRegex.test(value) && !ipv6CidrRegex.test(value) && !domainRegex.test(value));
+        .filter(value => !isIPv4CIDR(value) && !isIPv6CIDR(value) && !isDomain(value));
 
-    if (invalidValues.length) {
-        alert('⛔ Invalid IPs, Domains or IP ranges.\n💡 Please enter each value in a new line.\n\n' + invalidValues.map(ip => `⚠️ ${ip}`).join('\n'));
+    const invalidDomainValues = parseElmValues('customBypassSanctionRules').filter(value => !isDomain(value));
+
+    if (invalidDomainIpValues.length) {
+        alert(
+            '⛔ Invalid IPs, Domains or IP ranges.\n' +
+            '💡 Please enter each value in a new line.\n\n' +
+            invalidDomainIpValues.map(val => `⚠️ ${val}`).join('\n')
+        );
+
+        return false;
+    }
+
+    if (invalidDomainValues.length) {
+        alert(
+            '⛔ Invalid Domains.\n💡 Please enter each value in a new line.\n\n' +
+            invalidDomainValues.map(val => `⚠️ ${val}`).join('\n')
+        );
+
         return false;
     }
 
@@ -699,7 +703,12 @@ function validateMultipleHostNames() {
         .filter(value => !isValidHostName(value));
 
     if (invalidValues.length) {
-        alert('⛔ Invalid IPs or Domains.\n💡 Please enter each value in a new line.\n\n' + invalidValues.map(ip => `⚠️ ${ip}`).join('\n'));
+        alert(
+            '⛔ Invalid IPs or Domains.\n' +
+            '💡 Please enter each value in a new line.\n\n' +
+            invalidValues.map(ip => `⚠️ ${ip}`).join('\n')
+        );
+
         return false;
     }
 
@@ -711,7 +720,12 @@ function validateProxyIPs() {
         .filter(value => !isValidHostName(value));
 
     if (invalidValues.length) {
-        alert('⛔ Invalid proxy IPs.\n💡 Please enter each value in a new line.\n\n' + invalidValues.map(ip => `⚠️ ${ip}`).join('\n'));
+        alert(
+            '⛔ Invalid proxy IPs.\n' +
+            '💡 Please enter each value in a new line.\n\n' +
+            invalidValues.map(ip => `⚠️ ${ip}`).join('\n')
+        );
+
         return false;
     }
 
@@ -720,10 +734,15 @@ function validateProxyIPs() {
 
 function validateNAT64Prefixes() {
     const invalidValues = parseElmValues('prefixes')
-        .filter(value => !ipv6Regex.test(value));
+        .filter(value => !isIPv6(value));
 
     if (invalidValues.length) {
-        alert('⛔ Invalid NAT64 prefix.\n💡 Please enter each prefix in a new line using [].\n\n' + invalidValues.map(ip => `⚠️ ${ip}`).join('\n'));
+        alert(
+            '⛔ Invalid NAT64 prefix.\n' +
+            '💡 Please enter each prefix in a new line using [].\n\n' +
+            invalidValues.map(ip => `⚠️ ${ip}`).join('\n')
+        );
+
         return false;
     }
 
@@ -735,7 +754,11 @@ function validateWarpEndpoints() {
         .filter(value => !isValidHostName(value, true));
 
     if (invalidEndpoints.length) {
-        alert('⛔ Invalid endpoint.\n\n' + invalidEndpoints.map(endpoint => `⚠️ ${endpoint}`).join('\n'));
+        alert(
+            '⛔ Invalid endpoint.\n\n' +
+            invalidEndpoints.map(endpoint => `⚠️ ${endpoint}`).join('\n')
+        );
+
         return false;
     }
 
@@ -747,13 +770,14 @@ function validateMinMax() {
     const [
         fragmentLengthMin, fragmentLengthMax,
         fragmentIntervalMin, fragmentIntervalMax,
+        fragmentMaxSplitMin, fragmentMaxSplitMax,
         noiseCountMin, noiseCountMax,
         noiseSizeMin, noiseSizeMax,
-        noiseDelayMin, noiseDelayMax,
-
+        noiseDelayMin, noiseDelayMax
     ] = [
         'fragmentLengthMin', 'fragmentLengthMax',
         'fragmentIntervalMin', 'fragmentIntervalMax',
+        'fragmentMaxSplitMin', 'fragmentMaxSplitMax',
         'noiseCountMin', 'noiseCountMax',
         'noiseSizeMin', 'noiseSizeMax',
         'noiseDelayMin', 'noiseDelayMax'
@@ -761,6 +785,7 @@ function validateMinMax() {
 
     if (fragmentLengthMin >= fragmentLengthMax ||
         fragmentIntervalMin > fragmentIntervalMax ||
+        fragmentMaxSplitMin > fragmentMaxSplitMax ||
         noiseCountMin > noiseCountMax ||
         noiseSizeMin > noiseSizeMax ||
         noiseDelayMin > noiseDelayMax
@@ -773,29 +798,65 @@ function validateMinMax() {
 }
 
 function validateChainProxy() {
-    const chainProxy = getElmValue('outProxy');
-    const isVless = /vless:\/\/[^\s@]+@[^\s:]+:[^\s]+/.test(chainProxy);
-    const isTrojan = /trojan:\/\/[^\s@]+@[^\s:]+:[^\s]+/.test(chainProxy);
-    const isShadowsocks = /ss:\/\/[^\s@]+@[^\s:]+:[^\s]+/.test(chainProxy);
-    const hasSecurity = /security=/.test(chainProxy);
-    const isSocksHttp = /^(http|socks):\/\/(?:([^:@]+):([^:@]+)@)?([^:@]+):(\d+)$/.test(chainProxy);
-    const securityRegex = /security=(tls|none|reality)/;
-    const validSecurityType = securityRegex.test(chainProxy);
-    const validTransmission = /type=(tcp|grpc|ws|httpupgrade)/.test(chainProxy);
+    let chainProxy = getElmValue('outProxy');
+    if (!chainProxy) return true;
+    const isVMess = /vmess:\/\/.+$/.test(chainProxy);
+    const isOthers = /(http|socks|socks5|vless|trojan|ss):\/\/[^\s@]+@[^\s:]+:[^\s]+/.test(chainProxy);
 
-    if (!((isVless || isTrojan) && (hasSecurity && validSecurityType || !hasSecurity) && validTransmission) && !isShadowsocks && !isSocksHttp && chainProxy) {
-        alert('⛔ Invalid Config!\n💡 The chain proxy should be VLESS, Trojan, Shadowsocks, Socks or Http!\n💡 VLESS, Trojan transmission should be GRPC,WS or TCP\n💡 VLESS, Trojan and Shadowsocks security should be TLS, Reality or None\n💡 Socks or http should be like:\n + (socks or http)://user:pass@host:port\n + (socks or http)://host:port');
+    if (!isVMess && !isOthers) {
+        alert(
+            '⛔ Invalid Config!\n' +
+            '💡 Standard formats are:\n\n' +
+            ' + (socks or socks5 or http)://user:pass@server:port\n' +
+            ' + (socks or socks5 or http)://base64@server:port\n' +
+            ' + vless://uuid@server:port...\n' +
+            ' + vmess://base64\n' +
+            ' + trojan://password@server:port...\n' +
+            ' + ss://base64@server:port...'
+        );
+
         return false;
     }
 
-    let match = chainProxy.match(securityRegex);
-    const securityType = match?.[1] || null;
-    match = chainProxy.match(/:(\d+)\?/);
-    const vlessPort = match?.[1] || null;
+    const config = new URL(chainProxy);
+    let { protocol, username } = config;
+    let security = config.searchParams.get('security');
+    let type = config.searchParams.get('type');
 
-    if ((isVless || isTrojan) && securityType === 'tls' && vlessPort !== '443') {
-        alert('⛔ VLESS TLS port can be only 443 to be used as a proxy chain!');
-        return false;
+    if (isVMess) {
+        const vmConfig = JSON.parse(atob(config.host));
+        username = vmConfig.id;
+        security = vmConfig.tls;
+        type = vmConfig.net;
+    }
+
+    if (['vless:', 'trojan:', 'vmess:'].includes(protocol)) {
+        if (!username) {
+            alert(
+                '⛔ Invalid Config!\n' +
+                '💡 Config URL should contain UUID or Password.'
+            );
+
+            return false;
+        }
+
+        if (security && !['tls', 'none', 'reality'].includes(security)) {
+            alert(
+                '⛔ Invalid Config!\n' +
+                '💡 VLESS, VMess or Trojan security can be TLS, Reality or None.'
+            );
+
+            return false;
+        }
+
+        if (!['tcp', 'raw', 'ws', 'grpc', 'httpupgrade'].includes(type)) {
+            alert(
+                '⛔ Invalid Config!\n' +
+                '💡 VLESS, VMess or Trojan transmission can be tcp, ws, grpc or httpupgrade.'
+            );
+
+            return false;
+        }
     }
 
     return true;
@@ -820,7 +881,11 @@ function validateKnockerNoise() {
     const knockerNoise = getElmValue("knockerNoiseMode");
 
     if (!regex.test(knockerNoise)) {
-        alert('⛔ Invalid noise  mode.\n💡 Please use "none", "quic", "random" or a valid hex value.');
+        alert(
+            '⛔ Invalid noise  mode.\n' +
+            '💡 Please use "none", "quic", "random" or a valid hex value.'
+        );
+
         return false;
     }
 
@@ -865,7 +930,10 @@ function validateXrayNoises(fields) {
             }
             case 'hex': {
                 if (!(/^(?=(?:[0-9A-Fa-f]{2})*$)[0-9A-Fa-f]+$/.test(packets[index]))) {
-                    alert('⛔ The Hex noise packet is not a valid hex value! It should have even length and consisted of 0-9, a-f and A-F.');
+                    alert(
+                        '⛔ The Hex noise packet is not a valid hex value!\n' +
+                        '💡 It should have even length and consisted of 0-9, a-f and A-F.'
+                    );
                     submisionError = true;
                 }
 
@@ -875,6 +943,86 @@ function validateXrayNoises(fields) {
     });
 
     return !submisionError;
+}
+
+function validateSettings() {
+    const configForm = document.getElementById('configForm');
+    const formData = new FormData(configForm);
+
+    const fields = [
+        'udpXrayNoiseMode',
+        'udpXrayNoisePacket',
+        'udpXrayNoiseDelayMin',
+        'udpXrayNoiseDelayMax',
+        'udpXrayNoiseCount',
+        'applyTo'
+    ].map(field => formData.getAll(field));
+
+    const validations = [
+        validateRemoteDNS(),
+        validateSanctionDns(),
+        validateLocalDNS(),
+        validateWarpDNS(),
+        validateMultipleHostNames(),
+        validateProxyIPs(),
+        validateNAT64Prefixes(),
+        validateWarpEndpoints(),
+        validateMinMax(),
+        validateChainProxy(),
+        validateCustomCdn(),
+        validateKnockerNoise(),
+        validateXrayNoises(fields),
+        validateCustomRules()
+    ];
+
+    if (!validations.every(Boolean)) {
+        return false;
+    }
+
+    const form = Object.fromEntries(formData.entries());
+    const [modes, packets, delaysMin, delaysMax, counts, applyTo] = fields;
+
+    form.xrayUdpNoises = modes.map((mode, index) => ({
+        type: mode,
+        packet: packets[index],
+        delay: `${delaysMin[index]}-${delaysMax[index]}`,
+        applyTo: applyTo[index],
+        count: counts[index]
+    }));
+
+    form.ports = [
+        ...defaultHttpPorts,
+        ...defaultHttpsPorts
+    ].filter(port => formData.has(port.toString()));
+
+    checkboxElements.forEach(elm => {
+        form[elm.id] = formData.has(elm.id);
+    });
+
+    selectElements.forEach(elm => {
+        let value = form[elm.id];
+        if (value === 'true') value = true;
+        if (value === 'false') value = false;
+        form[elm.id] = value;
+    });
+
+    inputElements.forEach(elm => {
+        if (typeof form[elm.id] === 'string') {
+            form[elm.id] = form[elm.id].trim();
+        }
+    });
+
+    numInputElements.forEach(elm => {
+        form[elm.id] = Number(form[elm.id].trim());
+    });
+
+    textareaElements.forEach(elm => {
+        const key = elm.id;
+        const value = form[key];
+        form[key] = value?.split('\n').map(val => val.trim()).filter(Boolean) || [];
+    });
+
+    return form;
 }
 
 function logout(event) {
@@ -890,15 +1038,6 @@ function logout(event) {
         })
         .catch(error => console.error("Logout error:", error.message || error));
 }
-
-document.querySelectorAll(".toggle-password").forEach(toggle => {
-    toggle.addEventListener("click", function () {
-        const input = this.previousElementSibling;
-        const isPassword = input.type === "password";
-        input.type = isPassword ? "text" : "password";
-        this.textContent = isPassword ? "visibility" : "visibility_off";
-    });
-});
 
 function resetPassword(event) {
     event.preventDefault();
@@ -990,6 +1129,7 @@ function addUdpNoise(isManual, noiseIndex, udpNoise) {
         type: 'rand',
         packet: '50-100',
         delay: '1-5',
+        applyTo: 'ip',
         count: 5
     };
 
@@ -1017,7 +1157,7 @@ function addUdpNoise(isManual, noiseIndex, udpNoise) {
                 </div>
             </div>
             <div class="form-control">
-                <label>📥 Packet</label>
+                <label>📦 Packet</label>
                 <div>
                     <input type="text" name="udpXrayNoisePacket" value="${noise.packet}">
                 </div>
@@ -1036,6 +1176,16 @@ function addUdpNoise(isManual, noiseIndex, udpNoise) {
                     <span> - </span>
                     <input type="number" name="udpXrayNoiseDelayMax"
                         value="${noise.delay.split('-')[1]}" min="1" required>
+                </div>
+            </div>
+            <div class="form-control">
+                <label>⚙️ Applies to</label>
+                <div>
+                    <select name="applyTo">
+                        <option value="ip" ${!noise.applyTo || noise.applyTo === 'ip' ? 'selected' : ''}>IP</option>
+                        <option value="ipv4" ${noise.applyTo === 'ipv4' ? 'selected' : ''}>IPv4</option>
+                        <option value="ipv6" ${noise.applyTo === 'ipv6' ? 'selected' : ''}>IPv6</option>
+                    </select>
                 </div>
             </div>
         </div>`;
@@ -1099,7 +1249,11 @@ function deleteUdpNoise(event) {
         return;
     }
 
-    const confirmReset = confirm('⚠️ This will delete the noise.\n\n❓ Are you sure?');
+    const confirmReset = confirm(
+        '⚠️ This will delete the noise.\n\n' +
+        '❓ Are you sure?'
+    );
+
     if (!confirmReset) return;
     event.target.closest(".inner-container").remove();
     enableApplyButton();

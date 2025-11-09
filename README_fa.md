@@ -53,12 +53,12 @@
 
 |       Client        |     Version      | پشتیبانی از Fragment | پشتیبانی از Warp Pro |
 | :-----------------: | :--------------: | :------------------: | :------------------: |
-|     **v2rayNG**     | 1.10.11 و بالاتر |  :heavy_check_mark:  |  :heavy_check_mark:  |
+|     **v2rayNG**     | 1.10.26 و بالاتر |  :heavy_check_mark:  |  :heavy_check_mark:  |
 |     **MahsaNG**     |   14 و بالاتر    |  :heavy_check_mark:  |  :heavy_check_mark:  |
-|     **v2rayN**      | 7.14.6 و بالاتر  |  :heavy_check_mark:  |  :heavy_check_mark:  |
+|     **v2rayN**      | 7.15.4 و بالاتر  |  :heavy_check_mark:  |  :heavy_check_mark:  |
 |   **v2rayN-PRO**    |   2.0 و بالاتر   |  :heavy_check_mark:  |  :heavy_check_mark:  |
 |    **Sing-box**     | 1.12.0 و بالاتر  |  :heavy_check_mark:  |         :x:          |
-|    **Streisand**    | 1.6.60 و بالاتر  |  :heavy_check_mark:  |  :heavy_check_mark:  |
+|    **Streisand**    | 1.6.64 و بالاتر  |  :heavy_check_mark:  |  :heavy_check_mark:  |
 |   **Clash Meta**    |                  |         :x:          |  :heavy_check_mark:  |
 | **Clash Verge Rev** |                  |         :x:          |  :heavy_check_mark:  |
 |     **FLClash**     |                  |         :x:          |  :heavy_check_mark:  |
@@ -71,15 +71,15 @@
 
 <div dir="rtl">
 
-|   Variable   |               Usage               |
-| :----------: | :-------------------------------: |
-|   **UUID**   |      UUID برای پروتکل VLESS       |
-| **TR_PASS**  |        پسورد پروتکل Trojan        |
-| **PROXY_IP** |   Proxy IP برای VLESS و Trojan    |
-|  **PREFIX**  | NAT64 Prefix برای VLESS و Trojan  |
-| **SUB_PATH** |     مسیر لینک‌های اشتراک شخصی     |
-| **FALLBACK** | دامنه‌ی پوششی برای VLESS و Trojan |
-| **DOH_URL**  |    DOH برای عملیات داخلی ورکر     |
+|  نام متغیر   |           مورد استفاده            |       اجباری       |
+| :----------: | :-------------------------------: | :----------------: |
+|   **UUID**   |      UUID برای پروتکل VLESS       | :heavy_check_mark: |
+| **TR_PASS**  |        پسورد پروتکل Trojan        | :heavy_check_mark: |
+| **PROXY_IP** |   Proxy IP برای VLESS و Trojan    |        :x:         |
+|  **PREFIX**  | NAT64 Prefix برای VLESS و Trojan  |        :x:         |
+| **SUB_PATH** |     مسیر لینک‌های اشتراک شخصی     |        :x:         |
+| **FALLBACK** | دامنه‌ی پوششی برای VLESS و Trojan |        :x:         |
+| **DOH_URL**  |    DOH برای عملیات داخلی ورکر     |        :x:         |
 
 </div>
 

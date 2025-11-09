@@ -44,17 +44,29 @@ This project is aimed to provide a user panel to access FREE, SECURE and PRIVATE
 
 |       Client        |      Version      | Fragment support | Warp Pro support |
 | :-----------------: | :---------------: | :--------------: | :--------------: |
-|     **v2rayNG**     | 1.10.11 or higher | :material-check: | :material-check: |
+|     **v2rayNG**     | 1.10.26 or higher | :material-check: | :material-check: |
 |     **MahsaNG**     |   14 or higher    | :material-check: | :material-check: |
-|     **v2rayN**      | 7.14.6 or higher  | :material-check: | :material-check: |
+|     **v2rayN**      | 7.15.4 or higher  | :material-check: | :material-check: |
 |   **v2rayN-PRO**    |   1.9 or higher   | :material-check: | :material-check: |
 |    **Sing-box**     | 1.12.0 or higher  | :material-check: | :material-close: |
-|    **Streisand**    | 1.6.60 or higher  | :material-check: | :material-check: |
+|    **Streisand**    | 1.6.64 or higher  | :material-check: | :material-check: |
 |   **Clash Meta**    |                   | :material-close: | :material-check: |
 | **Clash Verge Rev** |                   | :material-close: | :material-check: |
 |     **FLClash**     |                   | :material-close: | :material-check: |
 |   **AmneziaVPN**    |                   | :material-close: | :material-check: |
 |    **WG Tunnel**    |                   | :material-close: | :material-check: |
+
+## Environment variables
+
+|   Variable   |               Usage                |     Mandatory      |
+| :----------: | :--------------------------------: | :----------------: |
+|   **UUID**   |             VLESS UUID             | :heavy_check_mark: |
+| **TR_PASS**  |          Trojan Password           | :heavy_check_mark: |
+| **PROXY_IP** | Proxy IP or domain (VLESS, Trojan) |        :x:         |
+|  **PREFIX**  |   NAT64 Prefixes (VLESS, Trojan)   |        :x:         |
+| **SUB_PATH** |         Subscriptions' URI         |        :x:         |
+| **FALLBACK** |  Fallback domain (VLESS, Trojan)   |        :x:         |
+| **DOH_URL**  |              Core DOH              |        :x:         |
 
 ---
 
